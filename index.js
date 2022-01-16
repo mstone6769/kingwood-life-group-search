@@ -10,16 +10,16 @@ const pickedFields = [
   'Name',
   'Display Email',
   'Display Phone',
-  'Demographic Filter',
   'Target | Gray Text',
-  'Type Filter',
   'Description',
   'Meeting Days',
-  'Childcare Checkbox',
-  'Filter Days',
   'Location of LifeGroup',
   'Form Link',
-  'Online/Zoom Checkbox'
+  'Demographic Filter',
+  'Type Filter',
+  'Filter Days',
+  'Childcare\nCheckbox',
+  'Online/Zoom Checkbox',
 ];
 
 const keyMap = {
@@ -29,10 +29,10 @@ const keyMap = {
   'Display Phone': 'phone',
   'Demographic Filter': 'filterDemographic',
   'Target | Gray Text': 'target',
-  'Type Filter': 'type',
+  'Type Filter': 'filterType',
   'Description': 'description',
   'Meeting Days': 'meetsOn',
-  'Childcare Checkbox': 'childcareAvailable',
+  'Childcare\nCheckbox': 'childcareAvailable',
   'Filter Days': 'filterDays',
   'Location of LifeGroup': 'location',
   'Form Link': 'formLink',
@@ -53,16 +53,19 @@ const splitAndMapKeys = (field) => field.split(',').map((dem) => dem.trim());
 const mapLifeGroups = (lifeGroups) => {
   const firstField = pickedFields[0];
   const secondField = pickedFields[1];
+  const keyMapValues = Object.values(keyMap);
   return lifeGroups.reduce((acc, group) => {
     if (!group[firstField] || !group[secondField]) return acc;
     const mappedGroup = mapkeys(pick(group, pickedFields), (val, key) => keyMap[key]);
-    mappedGroup.filterDemographic = splitAndMapKeys(mappedGroup.filterDemographic);
-    mappedGroup.filterDays = splitAndMapKeys(mappedGroup.filterDays);
-    mappedGroup.email = mappedGroup.email.toLowerCase();
-    Object.values(keyMap).forEach((key) => {
+    keyMapValues.forEach((key) => {
       if (typeof mappedGroup[key] !== 'string') return;
       mappedGroup[key] = mappedGroup[key].replace(/\n/g, '');
     });
+    mappedGroup.filterDemographic = splitAndMapKeys(mappedGroup.filterDemographic);
+    mappedGroup.filterDays = splitAndMapKeys(mappedGroup.filterDays);
+    mappedGroup.filterType = splitAndMapKeys(mappedGroup.filterType);
+    mappedGroup.email = mappedGroup.email.toLowerCase();
+    
     acc.push(mappedGroup);
     return acc;
   }, [])
