@@ -56,6 +56,7 @@ const mapLifeGroups = (lifeGroups) => {
   const keyMapValues = Object.values(keyMap);
   return lifeGroups.reduce((acc, group) => {
     if (!group[firstField] || !group[secondField]) return acc;
+    if (group['Hidden'] === 'Yes') return acc;
     const mappedGroup = mapkeys(pick(group, pickedFields), (val, key) => keyMap[key]);
     keyMapValues.forEach((key) => {
       if (typeof mappedGroup[key] !== 'string') return;
