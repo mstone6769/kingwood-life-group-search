@@ -1,7 +1,5 @@
 const csv = require('csvtojson');
 const fs = require('fs');
-const pick = require('lodash.pick');
-const mapkeys = require('lodash.mapkeys');
 
 const csvFilePath = './life-groups.csv';
 
@@ -49,6 +47,8 @@ const keyMap = {
   'Group Type (WHAT HAPPENS IN GROUP)': 'filterType'
 };
 
+const keyMapValues = [...new Set(Object.values(keyMap))];
+
 const writeFile = (jsonObj) => {
   try {
     return fs.writeFileSync('./life-groups.json', JSON.stringify(jsonObj))
@@ -64,11 +64,10 @@ const splitAndMapKeys = (field) => String(field).split(',').map((dem) => dem.tri
 const mapLifeGroups = (lifeGroups) => {
   const firstField = pickedFields[0];
   const secondField = pickedFields[1];
-  const keyMapValues = Object.values(keyMap);
   return lifeGroups.reduce((acc, group) => {
     if (!group[firstField] || !group[secondField]) return acc;
     if (group['Hidden'] === 'Yes') return acc;
-    const mappedGroup = mapkeys(pick(group, pickedFields), (val, key) => keyMap[String(key)]);
+    const mappedGroup = Object.fromEntries(pickedFields.map(key => [keyMap[key], group[key]]));
     keyMapValues.forEach((key) => {
       if (typeof mappedGroup[key] !== 'string') return;
       mappedGroup[key] = mappedGroup[key].replace(/\n/g, '');
