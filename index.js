@@ -54,6 +54,7 @@ const writeFile = (jsonObj) => {
     return fs.writeFileSync('./life-groups.json', JSON.stringify(jsonObj))
     //file written successfully
   } catch (err) {
+    // eslint-disable-next-line no-console
     console.error(err)
   }
 };
@@ -68,7 +69,6 @@ const mapLifeGroups = (lifeGroups) => {
     if (!group[firstField] || !group[secondField]) return acc;
     if (group['Hidden'] === 'Yes') return acc;
     const mappedGroup = mapkeys(pick(group, pickedFields), (val, key) => keyMap[String(key)]);
-    console.log(mappedGroup);
     keyMapValues.forEach((key) => {
       if (typeof mappedGroup[key] !== 'string') return;
       mappedGroup[key] = mappedGroup[key].replace(/\n/g, '');
