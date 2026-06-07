@@ -85,11 +85,11 @@ const mapLifeGroups = (lifeGroups) => {
 }
 
 
-csv()
-  .fromFile(csvFilePath)
-  .then((lifeGroups) => {
-    const mappedData = mapLifeGroups(lifeGroups);
-    //console.log(mappedData);
-    return mappedData;
-  })
-  .then((lifeGroups)=>writeFile(lifeGroups));
+if (require.main === module) {
+  csv()
+    .fromFile(csvFilePath)
+    .then((lifeGroups) => mapLifeGroups(lifeGroups))
+    .then((lifeGroups) => writeFile(lifeGroups));
+}
+
+module.exports = { splitAndMapKeys, mapLifeGroups, writeFile };
