@@ -15,9 +15,14 @@ const pickedFields = [
   'Meeting Days',
   'Location of LifeGroup',
   'Form Link',
+  'Category',
   'Demographic Filter',
   'Type Filter',
   'Filter Days',
+  'Demographic (HOW OLD ARE THE PEOPLE?)',
+  'Category (WHO GATHERS TOGETHER)',
+  'Target | Gray Text (WHO SHOULD SIGN UP)',
+  'Group Type (WHAT HAPPENS IN GROUP)',
   'Childcare\nCheckbox',
   'Online/Zoom Checkbox',
 ];
@@ -28,6 +33,7 @@ const keyMap = {
   'Display Email': 'email',
   'Display Phone': 'phone',
   'Demographic Filter': 'filterDemographic',
+  'Category': 'filterCategory',
   'Target | Gray Text': 'target',
   'Type Filter': 'filterType',
   'Description': 'description',
@@ -36,7 +42,11 @@ const keyMap = {
   'Filter Days': 'filterDays',
   'Location of LifeGroup': 'location',
   'Form Link': 'formLink',
-  'Online/Zoom Checkbox': 'online'
+  'Online/Zoom Checkbox': 'online',
+  'Demographic (HOW OLD ARE THE PEOPLE?)': 'filterDemographic',
+  'Category (WHO GATHERS TOGETHER)': 'filterCategory',
+  'Target | Gray Text (WHO SHOULD SIGN UP)': 'target',
+  'Group Type (WHAT HAPPENS IN GROUP)': 'filterType'
 };
 
 const writeFile = (jsonObj) => {
@@ -48,7 +58,7 @@ const writeFile = (jsonObj) => {
   }
 };
 
-const splitAndMapKeys = (field) => field.split(',').map((dem) => dem.trim());
+const splitAndMapKeys = (field) => String(field).split(',').map((dem) => dem.trim());
 
 const mapLifeGroups = (lifeGroups) => {
   const firstField = pickedFields[0];
@@ -57,12 +67,14 @@ const mapLifeGroups = (lifeGroups) => {
   return lifeGroups.reduce((acc, group) => {
     if (!group[firstField] || !group[secondField]) return acc;
     if (group['Hidden'] === 'Yes') return acc;
-    const mappedGroup = mapkeys(pick(group, pickedFields), (val, key) => keyMap[key]);
+    const mappedGroup = mapkeys(pick(group, pickedFields), (val, key) => keyMap[String(key)]);
+    console.log(mappedGroup);
     keyMapValues.forEach((key) => {
       if (typeof mappedGroup[key] !== 'string') return;
       mappedGroup[key] = mappedGroup[key].replace(/\n/g, '');
     });
     mappedGroup.filterDemographic = splitAndMapKeys(mappedGroup.filterDemographic);
+    mappedGroup.filterCategory = splitAndMapKeys(mappedGroup.filterCategory);
     mappedGroup.filterDays = splitAndMapKeys(mappedGroup.filterDays);
     mappedGroup.filterType = splitAndMapKeys(mappedGroup.filterType);
     mappedGroup.email = mappedGroup.email.toLowerCase();
@@ -77,7 +89,7 @@ csv()
   .fromFile(csvFilePath)
   .then((lifeGroups) => {
     const mappedData = mapLifeGroups(lifeGroups);
-    console.log(mappedData);
+    //console.log(mappedData);
     return mappedData;
   })
   .then((lifeGroups)=>writeFile(lifeGroups));
