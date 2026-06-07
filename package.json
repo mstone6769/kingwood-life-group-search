@@ -9,7 +9,7 @@
   "author": "Morgan Stone <mstone@designbymorgan.com>",
   "license": "ISC",
   "dependencies": {
-    "csvtojson": "^2.0.10",
+    "csvtojson": "^2.0.14",
     "lodash.mapkeys": "^4.6.0",
     "lodash.pick": "^3.1.0"
   }
