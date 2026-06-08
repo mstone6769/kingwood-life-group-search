@@ -1,6 +1,7 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
-const { splitAndMapKeys, mapLifeGroups, validateColumns } = require('./index');
+const fs = require('fs');
+const { splitAndMapKeys, mapLifeGroups, validateColumns, writeFile } = require('./index');
 
 const makeGroup = (overrides = {}) => ({
   'LifeGroup Name': 'Test Group',
@@ -194,5 +195,23 @@ describe('validateColumns', () => {
   it('returns multiple warnings when several things are wrong', () => {
     const warnings = validateColumns([]);
     assert.ok(warnings.length >= 2);
+  });
+});
+
+describe('writeFile', () => {
+  it('writes JSON-serialized data to ./life-groups.json', (t) => {
+    const data = [{ name: 'Test Group' }];
+    const spy = t.mock.method(fs, 'writeFileSync', () => {});
+    writeFile(data);
+    assert.equal(spy.mock.calls.length, 1);
+    const [path, content] = spy.mock.calls[0].arguments;
+    assert.equal(path, './life-groups.json');
+    assert.equal(content, JSON.stringify(data));
+  });
+
+  it('does not throw when the write fails', (t) => {
+    t.mock.method(fs, 'writeFileSync', () => { throw new Error('disk full'); });
+    t.mock.method(console, 'error', () => {});
+    assert.doesNotThrow(() => writeFile([]));
   });
 });
