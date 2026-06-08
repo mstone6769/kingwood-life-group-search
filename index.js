@@ -49,6 +49,45 @@ const keyMap = {
 
 const keyMapValues = [...new Set(Object.values(keyMap))];
 
+// Columns that must always be present in the sheet export
+const requiredColumns = [
+  'LifeGroup Name',
+  'Name',
+  'Display Email',
+  'Display Phone',
+  'Description',
+  'Meeting Days',
+  'Location of LifeGroup',
+  'Form Link',
+  'Filter Days',
+  'Childcare\nCheckbox',
+  'Online/Zoom Checkbox',
+  'Hidden',
+];
+
+// The sheet uses either the old short-form or new long-form name for these columns.
+// At least one from each pair must be present.
+const aliasedColumnGroups = [
+  ['Demographic Filter', 'Demographic (HOW OLD ARE THE PEOPLE?)'],
+  ['Category', 'Category (WHO GATHERS TOGETHER)'],
+  ['Target | Gray Text', 'Target | Gray Text (WHO SHOULD SIGN UP)'],
+  ['Type Filter', 'Group Type (WHAT HAPPENS IN GROUP)'],
+];
+
+const validateColumns = (headers) => {
+  const warnings = [];
+  const missing = requiredColumns.filter(col => !headers.includes(col));
+  if (missing.length) {
+    warnings.push(`Missing required columns: ${missing.map(c => JSON.stringify(c)).join(', ')}`);
+  }
+  for (const group of aliasedColumnGroups) {
+    if (!group.some(col => headers.includes(col))) {
+      warnings.push(`Missing all variants of column: ${group.map(c => JSON.stringify(c)).join(' or ')}`);
+    }
+  }
+  return warnings;
+};
+
 const writeFile = (jsonObj) => {
   try {
     return fs.writeFileSync('./life-groups.json', JSON.stringify(jsonObj))
@@ -59,7 +98,10 @@ const writeFile = (jsonObj) => {
   }
 };
 
-const splitAndMapKeys = (field) => String(field).split(',').map((dem) => dem.trim());
+const splitAndMapKeys = (field) => {
+  if (field == null) return [];
+  return String(field).split(',').map((dem) => dem.trim());
+};
 
 const mapLifeGroups = (lifeGroups) => {
   const firstField = pickedFields[0];
@@ -76,7 +118,7 @@ const mapLifeGroups = (lifeGroups) => {
     mappedGroup.filterCategory = splitAndMapKeys(mappedGroup.filterCategory);
     mappedGroup.filterDays = splitAndMapKeys(mappedGroup.filterDays);
     mappedGroup.filterType = splitAndMapKeys(mappedGroup.filterType);
-    mappedGroup.email = mappedGroup.email.toLowerCase();
+    mappedGroup.email = (mappedGroup.email ?? '').toLowerCase();
     
     acc.push(mappedGroup);
     return acc;
@@ -87,8 +129,22 @@ const mapLifeGroups = (lifeGroups) => {
 if (require.main === module) {
   csv()
     .fromFile(csvFilePath)
+    .then((rows) => {
+      if (rows.length > 0) {
+        const warnings = validateColumns(Object.keys(rows[0]));
+        // eslint-disable-next-line no-console
+        warnings.forEach(w => console.warn(`[schema] ${w}`));
+      }
+      return rows;
+    })
     .then((lifeGroups) => mapLifeGroups(lifeGroups))
-    .then((lifeGroups) => writeFile(lifeGroups));
+    .then((lifeGroups) => {
+      if (lifeGroups.length === 0) {
+        // eslint-disable-next-line no-console
+        console.warn('[output] No groups were produced — verify column names in the sheet have not changed');
+      }
+      return writeFile(lifeGroups);
+    });
 }
 
-module.exports = { splitAndMapKeys, mapLifeGroups, writeFile };
+module.exports = { splitAndMapKeys, mapLifeGroups, writeFile, validateColumns };

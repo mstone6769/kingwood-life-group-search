@@ -1,6 +1,6 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
-const { splitAndMapKeys, mapLifeGroups } = require('./index');
+const { splitAndMapKeys, mapLifeGroups, validateColumns } = require('./index');
 
 const makeGroup = (overrides = {}) => ({
   'LifeGroup Name': 'Test Group',
@@ -22,6 +22,7 @@ const makeGroup = (overrides = {}) => ({
   'Group Type (WHAT HAPPENS IN GROUP)': '',
   'Childcare\nCheckbox': 'No',
   'Online/Zoom Checkbox': 'No',
+  'Hidden': 'No',
   ...overrides,
 });
 
@@ -44,6 +45,14 @@ describe('splitAndMapKeys', () => {
 
   it('handles an empty string', () => {
     assert.deepEqual(splitAndMapKeys(''), ['']);
+  });
+
+  it('returns an empty array for undefined', () => {
+    assert.deepEqual(splitAndMapKeys(undefined), []);
+  });
+
+  it('returns an empty array for null', () => {
+    assert.deepEqual(splitAndMapKeys(null), []);
   });
 });
 
@@ -109,5 +118,81 @@ describe('mapLifeGroups', () => {
     const results = mapLifeGroups([makeGroup(), makeGroup({ 'LifeGroup Name': 'Second Group' })]);
     assert.equal(results.length, 2);
     assert.equal(results[1].name, 'Second Group');
+  });
+
+  it('produces empty string email when Display Email column is missing', () => {
+    const group = makeGroup();
+    delete group['Display Email'];
+    const [result] = mapLifeGroups([group]);
+    assert.equal(result.email, '');
+  });
+
+  it('produces empty arrays for filter fields when columns are missing', () => {
+    const group = makeGroup();
+    delete group['Demographic Filter'];
+    delete group['Demographic (HOW OLD ARE THE PEOPLE?)'];
+    const [result] = mapLifeGroups([group]);
+    assert.deepEqual(result.filterDemographic, []);
+  });
+});
+
+describe('validateColumns', () => {
+  const validHeaders = [
+    'LifeGroup Name',
+    'Name',
+    'Display Email',
+    'Display Phone',
+    'Description',
+    'Meeting Days',
+    'Location of LifeGroup',
+    'Form Link',
+    'Filter Days',
+    'Childcare\nCheckbox',
+    'Online/Zoom Checkbox',
+    'Hidden',
+    'Demographic (HOW OLD ARE THE PEOPLE?)',
+    'Category (WHO GATHERS TOGETHER)',
+    'Target | Gray Text (WHO SHOULD SIGN UP)',
+    'Group Type (WHAT HAPPENS IN GROUP)',
+  ];
+
+  it('returns no warnings for a valid header set', () => {
+    assert.deepEqual(validateColumns(validHeaders), []);
+  });
+
+  it('warns when a required column is missing', () => {
+    const headers = validHeaders.filter(h => h !== 'Hidden');
+    const warnings = validateColumns(headers);
+    assert.equal(warnings.length, 1);
+    assert.ok(warnings[0].includes('"Hidden"'));
+  });
+
+  it('warns when multiple required columns are missing', () => {
+    const headers = validHeaders.filter(h => h !== 'Hidden' && h !== 'Display Email');
+    const warnings = validateColumns(headers);
+    assert.equal(warnings.length, 1);
+    assert.ok(warnings[0].includes('"Hidden"'));
+    assert.ok(warnings[0].includes('"Display Email"'));
+  });
+
+  it('warns when all variants of an aliased column group are missing', () => {
+    const headers = validHeaders.filter(
+      h => h !== 'Demographic Filter' && h !== 'Demographic (HOW OLD ARE THE PEOPLE?)'
+    );
+    const warnings = validateColumns(headers);
+    assert.equal(warnings.length, 1);
+    assert.ok(warnings[0].includes('Demographic'));
+  });
+
+  it('accepts the short-form alias when the long-form is absent', () => {
+    const headers = validHeaders
+      .filter(h => h !== 'Demographic (HOW OLD ARE THE PEOPLE?)')
+      .concat('Demographic Filter');
+    assert.deepEqual(validateColumns(headers), []);
+  });
+
+  it('returns multiple warnings when several things are wrong', () => {
+    const warnings = validateColumns([]);
+    assert.ok(warnings.length >= 2);
   });
 });
