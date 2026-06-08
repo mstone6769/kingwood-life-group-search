@@ -50,6 +50,7 @@ This writes `life-groups.json` to the project root.
 ## Development
 
 ```bash
-pnpm test   # run unit tests
-pnpm lint   # lint with ESLint
+pnpm test      # run unit tests
+pnpm coverage  # run unit tests with coverage report
+pnpm lint      # lint with ESLint
 ```
